@@ -88,7 +88,9 @@ trainer = SFTTrainer(
     packing=False,
 )
 
-trainer.train()
+trainer.train(resume_from_checkpoint=True)
+
+trainer.model.save_pretrained("trained-model")
 
 # TODO: >>1 tends to be too long for the context length. Is it possible to truncate it beforehand?
 # TODO: Check if the fine tuned weight has better performance than youri-7b-instruction
