@@ -22,7 +22,7 @@ dataset = dataset.map(lambda example: {"text": "ニュース:" + example["topic"
 train_dataset = dataset['train']
 eval_dataset = dataset['test']
 
-train_dataset = train_dataset.select(range(int(len(train_dataset) * 0.01)))
+train_dataset = train_dataset.select(range(int(len(train_dataset) * 0.1)))
 eval_dataset = eval_dataset.select(range(int(len(eval_dataset) * 0.01)))
 
 compute_dtype = getattr(torch, "float16")
@@ -61,9 +61,9 @@ training_params = TrainingArguments(
     gradient_accumulation_steps=1,
     evaluation_strategy="steps",
     optim="paged_adamw_32bit",
-    save_steps=100,
-    logging_steps=25,
-    eval_steps=200,
+    save_steps=200,
+    logging_steps=200,
+    eval_steps=1000,
     learning_rate=2e-4,
     weight_decay=0.001,
     fp16=False,
@@ -88,7 +88,8 @@ trainer = SFTTrainer(
     packing=False,
 )
 
-trainer.train(resume_from_checkpoint=True)
+# trainer.train(resume_from_checkpoint=True)
+trainer.train()
 
 trainer.model.save_pretrained("trained-model")
 
