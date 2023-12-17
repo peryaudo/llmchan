@@ -42,7 +42,7 @@ def generate(topic):
 conn = sqlite3.connect('database.db')
 
 for thread_id, title in tqdm(conn.execute("SELECT id, title FROM thread").fetchall()):
-    for _ in range(random.randint(1, 5)):
+    for _ in range(20):
         generated_text = generate(title)
         conn.execute("INSERT INTO post (thread_id, body) VALUES (?, ?)", (thread_id,generated_text))
         conn.commit()
