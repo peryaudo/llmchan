@@ -9,6 +9,7 @@ pipe = pipeline(task="text-generation", model="rinna/youri-7b-chat", device=0, t
 print("Done.")
 
 fewshot_examples = [tuple(uttr.split(': ')) for uttr in open('fewshot_examples.txt').readlines()]
+fewshot_examples = [{"speaker": speaker, "text": text} for speaker, text in fewshot_examples]
 
 def generate(topic):
     instruction = "匿名掲示板5ちゃんねるの投稿者として、以下のニュースにコメントしてください。"
