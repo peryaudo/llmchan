@@ -64,6 +64,10 @@ peft_args = LoraConfig(
     task_type="CAUSAL_LM",
 )
 
+# TODOs:
+# - Try larger gradient accumulation to mitigate oscilating loss?
+# - Try gradient checkpointing?
+# - Enable flash attention 2?
 training_params = TrainingArguments(
     output_dir="./results",
     num_train_epochs=1,
