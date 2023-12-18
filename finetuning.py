@@ -14,16 +14,15 @@ from transformers import (
     logging,
 )
 from peft import LoraConfig, PeftModel
-from trl import SFTTrainer
+from trl import SFTTrainer, DataCollatorForCompletionOnlyLM
 import pandas as pd
 
 dataset = load_from_disk("converted")
-dataset = dataset.map(lambda example: {"text": "ニュース:" + example["topic"] + "\n5chの反応:" + example["comment"]}, remove_columns=["topic", "comment"])
 train_dataset = dataset['train']
 eval_dataset = dataset['test']
 
-train_dataset = train_dataset.select(range(int(len(train_dataset) * 0.1)))
-eval_dataset = eval_dataset.select(range(int(len(eval_dataset) * 0.01)))
+# train_dataset = train_dataset.select(range(int(len(train_dataset) * 0.1)))
+eval_dataset = eval_dataset.select(range(int(len(eval_dataset) * 0.1)))
 
 compute_dtype = getattr(torch, "float16")
 
@@ -35,21 +34,32 @@ quant_config = BitsAndBytesConfig(
 )
 
 model = AutoModelForCausalLM.from_pretrained(
-    "rinna/youri-7b",
+    "rinna/youri-7b-chat",
     quantization_config=quant_config,
     device_map={"": 0}
 )
 model.config.use_cache = False
 model.config.pretraining_tp = 1
 
-tokenizer = AutoTokenizer.from_pretrained("rinna/youri-7b", trust_remote_code=True)
+tokenizer = AutoTokenizer.from_pretrained("rinna/youri-7b-chat", trust_remote_code=True)
 tokenizer.pad_token = tokenizer.eos_token
 tokenizer.padding_side = "right"
 
+def formatting_prompts_func(example):
+    output_texts = []
+    for i in range(len(example['comment'])):
+        text = f"設定: 匿名掲示板5ちゃんねるの投稿者として、以下のニュースにコメントしてください。\nユーザー: {example['topic'][i]}\nシステム: {example['comment'][i]}"
+        output_texts.append(text)
+    return output_texts
+
+response_template = "\nシステム:"
+response_template_ids = tokenizer.encode(response_template, add_special_tokens=False)[2:]
+collator = DataCollatorForCompletionOnlyLM(response_template_ids, tokenizer=tokenizer)
+
 peft_args = LoraConfig(
-    lora_alpha=16,
-    lora_dropout=0.1,
-    r=64,
+    lora_alpha=64,
+    lora_dropout=0.05,
+    r=16,
     bias="none",
     task_type="CAUSAL_LM",
 )
@@ -57,14 +67,14 @@ peft_args = LoraConfig(
 training_params = TrainingArguments(
     output_dir="./results",
     num_train_epochs=1,
-    per_device_train_batch_size=4,
-    gradient_accumulation_steps=1,
+    per_device_train_batch_size=2,
+    gradient_accumulation_steps=4,
     evaluation_strategy="steps",
     optim="paged_adamw_32bit",
-    save_steps=200,
-    logging_steps=200,
-    eval_steps=1000,
-    learning_rate=2e-4,
+    save_steps=500,
+    logging_steps=50,
+    eval_steps=500,
+    learning_rate=1e-4,
     weight_decay=0.001,
     fp16=False,
     bf16=False,
@@ -81,18 +91,15 @@ trainer = SFTTrainer(
     train_dataset=train_dataset,
     eval_dataset=eval_dataset,
     peft_config=peft_args,
-    dataset_text_field="text",
-    max_seq_length=None,
+    max_seq_length=512,
     tokenizer=tokenizer,
     args=training_params,
     packing=False,
+    formatting_func=formatting_prompts_func,
+    data_collator=collator,
 )
 
 # trainer.train(resume_from_checkpoint=True)
 trainer.train()
 
-trainer.model.save_pretrained("trained-model")
-
-# TODO: >>1 tends to be too long for the context length. Is it possible to truncate it beforehand?
-# TODO: Check if the fine tuned weight has better performance than youri-7b-instruction
-# TODO: Pretrain LLM with 5ch style posts beforehand (like ULMFiT)
+trainer.save_model()
