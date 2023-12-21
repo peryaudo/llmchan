@@ -66,9 +66,10 @@ peft_args = LoraConfig(
     task_type="CAUSAL_LM",
 )
 
+# TODO: Switch to wandb because it's more convenient
 training_params = TrainingArguments(
     output_dir="./results",
-    num_train_epochs=2,
+    num_train_epochs=4,
     per_device_train_batch_size=32,
     gradient_accumulation_steps=2,
     gradient_checkpointing=True,
