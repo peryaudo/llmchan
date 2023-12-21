@@ -36,7 +36,8 @@ quant_config = BitsAndBytesConfig(
 model = AutoModelForCausalLM.from_pretrained(
     "rinna/youri-7b-chat",
     quantization_config=quant_config,
-    device_map={"": 0}
+    device_map={"": 0},
+    use_flash_attention_2=True
 )
 model.config.use_cache = False
 model.config.pretraining_tp = 1
@@ -64,24 +65,21 @@ peft_args = LoraConfig(
     task_type="CAUSAL_LM",
 )
 
-# TODOs:
-# - Try larger gradient accumulation to mitigate oscilating loss?
-# - Try gradient checkpointing?
-# - Enable flash attention 2?
 training_params = TrainingArguments(
     output_dir="./results",
-    num_train_epochs=1,
-    per_device_train_batch_size=2,
-    gradient_accumulation_steps=4,
+    num_train_epochs=2,
+    per_device_train_batch_size=32,
+    gradient_accumulation_steps=2,
+    gradient_checkpointing=True,
     evaluation_strategy="steps",
     optim="paged_adamw_32bit",
-    save_steps=500,
-    logging_steps=50,
-    eval_steps=500,
-    learning_rate=1e-4,
+    save_steps=200,
+    logging_steps=20,
+    eval_steps=200,
+    learning_rate=2e-4,
     weight_decay=0.001,
     fp16=False,
-    bf16=False,
+    bf16=True,
     max_grad_norm=0.3,
     max_steps=-1,
     warmup_ratio=0.03,
