@@ -57,10 +57,11 @@ response_template = "\nシステム:"
 response_template_ids = tokenizer.encode(response_template, add_special_tokens=False)[2:]
 collator = DataCollatorForCompletionOnlyLM(response_template_ids, tokenizer=tokenizer)
 
+# Tips on parameters: https://www.anyscale.com/blog/fine-tuning-llms-lora-or-full-parameter-an-in-depth-analysis-with-llama-2#sensitivity-of-lora-to-learning-rate
 peft_args = LoraConfig(
-    lora_alpha=64,
+    lora_alpha=16,
     lora_dropout=0.05,
-    r=16,
+    r=8,
     bias="none",
     task_type="CAUSAL_LM",
 )
@@ -76,7 +77,7 @@ training_params = TrainingArguments(
     save_steps=200,
     logging_steps=20,
     eval_steps=200,
-    learning_rate=2e-4,
+    learning_rate=3e-5,
     weight_decay=0.001,
     fp16=False,
     bf16=True,
