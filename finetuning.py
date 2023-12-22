@@ -17,6 +17,9 @@ from peft import LoraConfig, PeftModel
 from trl import SFTTrainer, DataCollatorForCompletionOnlyLM
 import pandas as pd
 
+os.environ["WANDB_PROJECT"] = "llama_5ch"
+os.environ["WANDB_LOG_MODEL"] = "false"
+
 dataset = load_from_disk("converted")
 train_dataset = dataset['train']
 eval_dataset = dataset['test']
@@ -66,19 +69,18 @@ peft_args = LoraConfig(
     task_type="CAUSAL_LM",
 )
 
-# TODO: Switch to wandb because it's more convenient
 training_params = TrainingArguments(
     output_dir="./results",
     num_train_epochs=4,
     per_device_train_batch_size=32,
-    gradient_accumulation_steps=2,
+    gradient_accumulation_steps=1,
     gradient_checkpointing=True,
     evaluation_strategy="steps",
     optim="paged_adamw_32bit",
     save_steps=200,
     logging_steps=20,
     eval_steps=200,
-    learning_rate=3e-5,
+    learning_rate=1e-4,
     weight_decay=0.001,
     fp16=False,
     bf16=True,
@@ -87,7 +89,7 @@ training_params = TrainingArguments(
     warmup_ratio=0.03,
     group_by_length=True,
     lr_scheduler_type="constant",
-    report_to="tensorboard"
+    report_to="wandb"
 )
 
 trainer = SFTTrainer(
