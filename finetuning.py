@@ -87,7 +87,7 @@ training_params = TrainingArguments(
     max_grad_norm=0.3,
     max_steps=-1,
     warmup_ratio=0.03,
-    group_by_length=True,
+    group_by_length=False,
     lr_scheduler_type="constant",
     report_to="wandb"
 )
