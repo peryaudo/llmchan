@@ -1,5 +1,6 @@
 ### TODO
 
+* Check if fine-tuning is working as expected by trying youri-7b with databricks-dolly-15k-ja-gozaru
 * Improve the model
   * Further explore the dataset first
   * Try prompting to cleanse dataset
