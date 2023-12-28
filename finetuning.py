@@ -25,6 +25,7 @@ train_dataset = dataset['train']
 eval_dataset = dataset['test']
 
 # train_dataset = train_dataset.select(range(int(len(train_dataset) * 0.1)))
+train_dataset = train_dataset.select(range(1000))
 eval_dataset = eval_dataset.select(range(int(len(eval_dataset) * 0.1)))
 
 compute_dtype = getattr(torch, "float16")
@@ -64,14 +65,14 @@ collator = DataCollatorForCompletionOnlyLM(response_template_ids, tokenizer=toke
 peft_args = LoraConfig(
     lora_alpha=16,
     lora_dropout=0.05,
-    r=8,
+    r=64,
     bias="none",
     task_type="CAUSAL_LM",
 )
 
 training_params = TrainingArguments(
     output_dir="./results",
-    num_train_epochs=4,
+    num_train_epochs=60,
     per_device_train_batch_size=32,
     gradient_accumulation_steps=1,
     gradient_checkpointing=True,
