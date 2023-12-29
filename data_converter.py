@@ -3,7 +3,8 @@
 from datasets import load_dataset
 from bs4 import BeautifulSoup
 import re
-import pandas as pd
+
+_NUM_PROC = 16
 
 def cleanup_topic(topic):
     topic = BeautifulSoup(topic).get_text(strip = True)
@@ -13,25 +14,44 @@ def cleanup_topic(topic):
 def cleanup_comment(comment):
     return BeautifulSoup(comment).get_text(separator = '\n', strip = True).encode("utf-8", "ignore").decode("utf-8")
 
+def cleanup_detailed_topic(comment):
+    detailed_topic = BeautifulSoup(comment).get_text(separator = '\n', strip = True).encode("utf-8", "ignore").decode("utf-8")
+    detailed_topic = '\n'.join([line for line in detailed_topic.split('\n') if 'ttp' not in line])
+    return detailed_topic
+
+def to_dict_of_lists(l):
+    results = {}
+    for d in l:
+        for k, v in d.items():
+            if k in results:
+                results[k].append(v)
+            else:
+                results[k] = []
+    return results
+
 def process_thread(examples):
     comments = []
     for thread in examples['text']:
         lines = [line for line in thread.split('\n') if line]
         topic = cleanup_topic(lines[0].split('<>')[4])
-        comments += [(index + 1,
-                      topic,
-                      cleanup_comment(line.split('<>')[3]))
-                      for index, line in enumerate(lines)][1:999]
-
-    return {"index": [index for (index, _, _) in comments],
-            "topic": [topic for (_, topic, _) in comments],
-            "comment": [comment for (_, _, comment) in comments]}
+        detailed_topic = cleanup_detailed_topic(lines[0].split('<>')[3])
+        for index, line in enumerate(lines):
+            if index == 0:
+                continue
+            if "Over 1000 Thread" in line.split('<>')[2]:
+                continue
+            comments.append(
+                {"index": index + 1,
+                 "topic": topic,
+                 "detailed_topic": detailed_topic,
+                 "comment": cleanup_comment(line.split('<>')[3])})
+    return to_dict_of_lists(comments)
 
 def filter_example(example):
     return (len(example["comment"]) < 100) and (">>" not in example["comment"]) and ("ttp" not in example["comment"]) and ("批判要望" not in example["topic"])
 
 dataset = load_dataset("text", data_dir="scraped", sample_by='document')['train'].train_test_split(test_size=0.01)
-dataset = dataset.map(process_thread, batched=True, remove_columns=['text'], batch_size=1, num_proc=16)
+dataset = dataset.map(process_thread, batched=True, remove_columns=['text'], batch_size=1, num_proc=_NUM_PROC)
 dataset = dataset.filter(filter_example)
 dataset = dataset.shuffle()
 dataset.save_to_disk("converted")
