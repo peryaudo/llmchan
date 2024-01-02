@@ -7,20 +7,31 @@ from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
     TrainingArguments,
+    AutoConfig,
 )
 from trl import SFTTrainer, DataCollatorForCompletionOnlyLM
 
 os.environ["WANDB_PROJECT"] = "llmchan_gpt2s"
 os.environ["WANDB_LOG_MODEL"] = "false"
 
-dataset = load_from_disk("../../converted")
+dataset = load_from_disk("../../converted_with_score")
 train_dataset = dataset['train']
 eval_dataset = dataset['test']
 
-train_dataset = train_dataset.select(range(10000))
-eval_dataset = eval_dataset.select(range(1000))
+# train_dataset = train_dataset.select(range(100000))
+# eval_dataset = eval_dataset.select(range(1000))
+run_name = "one_epoch-400k-pretrained"
+# train_dataset = train_dataset.sort('similarity', reverse=True).select(range(10000)).shuffle()
+train_dataset = train_dataset.shuffle()
+eval_dataset = eval_dataset.sort('similarity', reverse=True).select(range(1000)).shuffle()
 
-model = AutoModelForCausalLM.from_pretrained("rinna/japanese-gpt2-small", device_map={"": 0})
+config = AutoConfig.from_pretrained("rinna/japanese-gpt2-small")
+# desired_dropout_rate = 0.5
+# config.resid_pdrop = desired_dropout_rate
+# config.attn_pdrop = desired_dropout_rate
+# config.embd_pdrop = desired_dropout_rate
+# model = AutoModelForCausalLM.from_pretrained("rinna/japanese-gpt2-small", config=config, device_map={"": 0})
+model = AutoModelForCausalLM.from_pretrained("lm_finetuning/checkpoint-1400", config=config, device_map={"": 0})
 
 tokenizer = AutoTokenizer.from_pretrained("rinna/japanese-gpt2-small", use_fast=False)
 tokenizer.do_lower_case = True
@@ -34,9 +45,11 @@ def formatting_prompts_func(example):
 
 collator = DataCollatorForCompletionOnlyLM("コメント: ", tokenizer=tokenizer)
 
+
 training_params = TrainingArguments(
-    output_dir="./results",
-    num_train_epochs=20,
+    output_dir="./" + run_name,
+    run_name=run_name,
+    num_train_epochs=1,
     per_device_train_batch_size=64,
     gradient_accumulation_steps=1,
     # gradient_checkpointing=True,
