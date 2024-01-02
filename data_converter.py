@@ -12,7 +12,8 @@ def cleanup_topic(topic):
     return topic.encode("utf-8", "ignore").decode("utf-8")
 
 def cleanup_comment(comment):
-    return BeautifulSoup(comment).get_text(separator = '\n', strip = True).encode("utf-8", "ignore").decode("utf-8")
+    comment = BeautifulSoup(comment).get_text(separator = '\n', strip = True).encode("utf-8", "ignore").decode("utf-8")
+    return '\n'.join([line for line in comment.split('\n') if not re.match(r'^[＞>]', line)])
 
 def cleanup_detailed_topic(comment):
     detailed_topic = BeautifulSoup(comment).get_text(separator = '\n', strip = True).encode("utf-8", "ignore").decode("utf-8")
