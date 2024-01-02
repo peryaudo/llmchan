@@ -48,7 +48,7 @@ def process_thread(examples):
     return to_dict_of_lists(comments)
 
 def filter_example(example):
-    return (len(example["comment"]) < 100) and (">>" not in example["comment"]) and ("ttp" not in example["comment"]) and ("批判要望" not in example["topic"])
+    return (len(example["comment"]) < 100) and (">>" not in example["comment"]) and ("ttp" not in example["comment"]) and ("ID" not in example["comment"]) and ("批判要望" not in example["topic"]) and ("◆" not in example["topic"])
 
 dataset = load_dataset("text", data_dir="scraped", sample_by='document')['train'].train_test_split(test_size=0.01)
 dataset = dataset.map(process_thread, batched=True, remove_columns=['text'], batch_size=1, num_proc=_NUM_PROC)
