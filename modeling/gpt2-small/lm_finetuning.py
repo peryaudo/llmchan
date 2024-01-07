@@ -8,19 +8,18 @@ from transformers import (
     AutoTokenizer,
     TrainingArguments,
     AutoConfig,
+    EarlyStoppingCallback,
 )
+import numpy as np
 from trl import SFTTrainer
 
 os.environ["WANDB_PROJECT"] = "llmchan_gpt2s"
 os.environ["WANDB_LOG_MODEL"] = "false"
 
+run_name = "lm_finetuning-train4000k"
 dataset = load_from_disk("../../converted")
 train_dataset = dataset['train']
-eval_dataset = dataset['test']
-
-run_name = "lm_finetuning-epoch20"
-train_dataset = train_dataset.shuffle()
-eval_dataset = eval_dataset.shuffle().select(range(1000))
+eval_dataset = dataset['test'].select(range(2000))
 
 config = AutoConfig.from_pretrained("rinna/japanese-gpt2-small")
 # desired_dropout_rate = 0.5
@@ -52,7 +51,8 @@ training_params = TrainingArguments(
     warmup_ratio=0.03,
     group_by_length=False,
     lr_scheduler_type="constant",
-    report_to="wandb"
+    report_to="wandb",
+    load_best_model_at_end=True,
 )
 
 trainer = SFTTrainer(
@@ -64,9 +64,10 @@ trainer = SFTTrainer(
     args=training_params,
     packing=True,
     dataset_text_field='comment',
+    callbacks=[EarlyStoppingCallback(early_stopping_patience=15)]
 )
 
-# trainer.train(resume_from_checkpoint=True)
-trainer.train()
+trainer.train(resume_from_checkpoint=True)
+# trainer.train()
 
 trainer.save_model()
