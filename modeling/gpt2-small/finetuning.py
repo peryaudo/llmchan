@@ -8,22 +8,17 @@ from transformers import (
     AutoTokenizer,
     TrainingArguments,
     AutoConfig,
+    EarlyStoppingCallback,
 )
 from trl import SFTTrainer, DataCollatorForCompletionOnlyLM
 
 os.environ["WANDB_PROJECT"] = "llmchan_gpt2s"
 os.environ["WANDB_LOG_MODEL"] = "false"
 
-dataset = load_from_disk("../../converted_with_score")
+run_name = "train4000k-pretrained"
+dataset = load_from_disk("../../converted")
 train_dataset = dataset['train']
-eval_dataset = dataset['test']
-
-# train_dataset = train_dataset.select(range(100000))
-# eval_dataset = eval_dataset.select(range(1000))
-run_name = "one_epoch-400k-pretrained"
-# train_dataset = train_dataset.sort('similarity', reverse=True).select(range(10000)).shuffle()
-train_dataset = train_dataset.shuffle()
-eval_dataset = eval_dataset.sort('similarity', reverse=True).select(range(1000)).shuffle()
+eval_dataset = dataset['test'].select(range(2000))
 
 config = AutoConfig.from_pretrained("rinna/japanese-gpt2-small")
 # desired_dropout_rate = 0.5
@@ -31,7 +26,7 @@ config = AutoConfig.from_pretrained("rinna/japanese-gpt2-small")
 # config.attn_pdrop = desired_dropout_rate
 # config.embd_pdrop = desired_dropout_rate
 # model = AutoModelForCausalLM.from_pretrained("rinna/japanese-gpt2-small", config=config, device_map={"": 0})
-model = AutoModelForCausalLM.from_pretrained("lm_finetuning/checkpoint-1400", config=config, device_map={"": 0})
+model = AutoModelForCausalLM.from_pretrained("lm_finetuning-train4000k", config=config, device_map={"": 0})
 
 tokenizer = AutoTokenizer.from_pretrained("rinna/japanese-gpt2-small", use_fast=False)
 tokenizer.do_lower_case = True
@@ -49,6 +44,7 @@ collator = DataCollatorForCompletionOnlyLM("コメント: ", tokenizer=tokenizer
 training_params = TrainingArguments(
     output_dir="./" + run_name,
     run_name=run_name,
+    # num_train_epochs=10,
     num_train_epochs=1,
     per_device_train_batch_size=64,
     gradient_accumulation_steps=1,
@@ -66,19 +62,22 @@ training_params = TrainingArguments(
     warmup_ratio=0.03,
     group_by_length=False,
     lr_scheduler_type="constant",
-    report_to="wandb"
+    report_to="wandb",
+    # load_best_model_at_end=True,
 )
 
 trainer = SFTTrainer(
     model=model,
     train_dataset=train_dataset,
     eval_dataset=eval_dataset,
+    dataset_num_proc=32,
     max_seq_length=512,
     tokenizer=tokenizer,
     args=training_params,
     packing=False,
     formatting_func=formatting_prompts_func,
     data_collator=collator,
+    # callbacks=[EarlyStoppingCallback(early_stopping_patience=20)],
 )
 
 # trainer.train(resume_from_checkpoint=True)

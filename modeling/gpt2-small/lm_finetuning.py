@@ -64,10 +64,10 @@ trainer = SFTTrainer(
     args=training_params,
     packing=True,
     dataset_text_field='comment',
-    callbacks=[EarlyStoppingCallback(early_stopping_patience=15)]
+    callbacks=[EarlyStoppingCallback(early_stopping_patience=20)]
 )
 
-trainer.train(resume_from_checkpoint=True)
-# trainer.train()
+# trainer.train(resume_from_checkpoint=True)
+trainer.train()
 
 trainer.save_model()
