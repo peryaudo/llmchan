@@ -44,8 +44,7 @@ collator = DataCollatorForCompletionOnlyLM("コメント: ", tokenizer=tokenizer
 training_params = TrainingArguments(
     output_dir="./" + run_name,
     run_name=run_name,
-    # num_train_epochs=10,
-    num_train_epochs=1,
+    num_train_epochs=10,
     per_device_train_batch_size=64,
     gradient_accumulation_steps=1,
     # gradient_checkpointing=True,
@@ -63,7 +62,8 @@ training_params = TrainingArguments(
     group_by_length=False,
     lr_scheduler_type="constant",
     report_to="wandb",
-    # load_best_model_at_end=True,
+    load_best_model_at_end=True,
+    save_total_limit=20,
 )
 
 trainer = SFTTrainer(
@@ -77,10 +77,10 @@ trainer = SFTTrainer(
     packing=False,
     formatting_func=formatting_prompts_func,
     data_collator=collator,
-    # callbacks=[EarlyStoppingCallback(early_stopping_patience=20)],
+    callbacks=[EarlyStoppingCallback(early_stopping_patience=150)],
 )
 
-# trainer.train(resume_from_checkpoint=True)
-trainer.train()
+trainer.train(resume_from_checkpoint=True)
+# trainer.train()
 
 trainer.save_model()

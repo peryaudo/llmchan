@@ -53,6 +53,7 @@ training_params = TrainingArguments(
     lr_scheduler_type="constant",
     report_to="wandb",
     load_best_model_at_end=True,
+    save_total_limit=20,
 )
 
 trainer = SFTTrainer(
