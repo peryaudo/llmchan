@@ -16,7 +16,7 @@ from peft import LoraConfig
 os.environ["WANDB_PROJECT"] = "llmchan_gpt2s"
 os.environ["WANDB_LOG_MODEL"] = "false"
 
-run_name = "lm_finetuning-train4000k-lora256-all"
+run_name = "lm_finetuning-train4000k-lora256-lr3e-5"
 dataset = load_from_disk("../../converted")
 train_dataset = dataset['train']
 eval_dataset = dataset['test'].select(range(2000))
@@ -51,7 +51,7 @@ training_params = TrainingArguments(
     save_steps=100,
     logging_steps=25,
     eval_steps=100,
-    learning_rate=1e-4,
+    learning_rate=3e-5,
     weight_decay=0.001,
     fp16=False,
     bf16=True,
