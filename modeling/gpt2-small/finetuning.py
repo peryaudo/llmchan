@@ -15,7 +15,9 @@ from trl import SFTTrainer, DataCollatorForCompletionOnlyLM
 os.environ["WANDB_PROJECT"] = "llmchan_gpt2s"
 os.environ["WANDB_LOG_MODEL"] = "false"
 
-run_name = "train4000k-pretrained"
+USE_DETAILED_TOPIC_PROMPT = True
+
+run_name = "train4000k-pretrained-detailed-topic"
 dataset = load_from_disk("../../converted")
 train_dataset = dataset['train']
 eval_dataset = dataset['test'].select(range(2000))
@@ -34,19 +36,35 @@ tokenizer.do_lower_case = True
 def formatting_prompts_func(example):
     output_texts = []
     for i in range(len(example['comment'])):
-        text = f"質問: 匿名掲示板5ちゃんねるの投稿者として、以下のニュースにコメントしてください。\nニュース: {example['topic'][i]}\nコメント: {example['comment'][i]}"
+        if USE_DETAILED_TOPIC_PROMPT:
+            detailed_topic = example['detailed_topic'][i].split('\n')
+            text = ""
+            for j in range(len(detailed_topic), -1, -1):
+                shorter_topic = '\n'.join(detailed_topic[0:j])
+                text = f"質問: 匿名掲示板5ちゃんねるの投稿者として、以下のニュースにコメントしてください。\nニュース: {shorter_topic}\nコメント: {example['comment'][i]}"
+                if len(tokenizer.encode(text)) <= 512:
+                    break
+        else:
+            text = f"質問: 匿名掲示板5ちゃんねるの投稿者として、以下のニュースにコメントしてください。\nニュース: {example['topic'][i]}\nコメント: {example['comment'][i]}"
         output_texts.append(text)
     return output_texts
 
 collator = DataCollatorForCompletionOnlyLM("コメント: ", tokenizer=tokenizer)
 
 
+if USE_DETAILED_TOPIC_PROMPT:
+    batch_size = 16
+    acc_step = 4
+else:
+    batch_size = 64
+    acc_step = 1
+
 training_params = TrainingArguments(
     output_dir="./" + run_name,
     run_name=run_name,
     num_train_epochs=10,
-    per_device_train_batch_size=64,
-    gradient_accumulation_steps=1,
+    per_device_train_batch_size=batch_size,
+    gradient_accumulation_steps=acc_step,
     # gradient_checkpointing=True,
     evaluation_strategy="steps",
     save_steps=200,
@@ -77,7 +95,7 @@ trainer = SFTTrainer(
     packing=False,
     formatting_func=formatting_prompts_func,
     data_collator=collator,
-    callbacks=[EarlyStoppingCallback(early_stopping_patience=150)],
+    callbacks=[EarlyStoppingCallback(early_stopping_patience=300)],
 )
 
 trainer.train(resume_from_checkpoint=True)
