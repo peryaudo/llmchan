@@ -38,7 +38,7 @@ tokenizer.padding_side = "right"
 peft_args = LoraConfig(
     lora_alpha=16,
     lora_dropout=0.0,
-    r=8,
+    r=64,
     bias="none",
     task_type="CAUSAL_LM",
     target_modules=[
@@ -56,13 +56,13 @@ training_params = TrainingArguments(
     output_dir="./" + run_name,
     run_name=run_name,
     num_train_epochs=10,
-    per_device_train_batch_size=24,
+    per_device_train_batch_size=20,
     gradient_accumulation_steps=1,
     gradient_checkpointing=True,
     evaluation_strategy="steps",
-    save_steps=100,
-    logging_steps=25,
-    eval_steps=100,
+    save_steps=25,
+    logging_steps=5,
+    eval_steps=25,
     learning_rate=1e-4,
     lr_scheduler_type="constant",
     weight_decay=0.0,
@@ -87,10 +87,10 @@ trainer = SFTTrainer(
     args=training_params,
     packing=True,
     dataset_text_field='comment',
-    callbacks=[EarlyStoppingCallback(early_stopping_patience=20)]
+    callbacks=[EarlyStoppingCallback(early_stopping_patience=30)]
 )
 
-# trainer.train(resume_from_checkpoint=True)
-trainer.train()
+trainer.train(resume_from_checkpoint=True)
+# trainer.train()
 
 trainer.save_model()
