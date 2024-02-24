@@ -9,14 +9,11 @@ from transformers import (
     TrainingArguments,
     AutoConfig,
     EarlyStoppingCallback,
-    BitsAndBytesConfig,
 )
 from trl import SFTTrainer, DataCollatorForCompletionOnlyLM
-from peft import PeftModel, prepare_model_for_kbit_training
-from peft.utils import prepare_model_for_kbit_training
 import torch
 
-os.environ["WANDB_PROJECT"] = "llmchan_youri7b"
+os.environ["WANDB_PROJECT"] = "llmchan_gpt2"
 os.environ["WANDB_LOG_MODEL"] = "false"
 
 USE_DETAILED_TOPIC_PROMPT = False
@@ -26,20 +23,17 @@ dataset = load_from_disk("../../converted")
 train_dataset = dataset['train']
 eval_dataset = dataset['test'].select(range(2000))
 
-BASE_MODEL_NAME = "rinna/youri-7b"
-quant_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_quant_type="nf4",
-)
-base_model = AutoModelForCausalLM.from_pretrained(BASE_MODEL_NAME, device_map={"": 0}, quantization_config=quant_config)
-base_model.config.use_cache = False
-base_model.config.pretraining_tp = 1
-base_model = prepare_model_for_kbit_training(base_model)
-model = PeftModel.from_pretrained(base_model, "lm_finetuning-train4000k", is_trainable=True, device_map={"": 0})
+BASE_MODEL_NAME = "rinna/japanese-gpt-1b"
+config = AutoConfig.from_pretrained(BASE_MODEL_NAME)
+# desired_dropout_rate = 0.5
+# config.resid_pdrop = desired_dropout_rate
+# config.attn_pdrop = desired_dropout_rate
+# config.embd_pdrop = desired_dropout_rate
+# model = AutoModelForCausalLM.from_pretrained("rinna/japanese-gpt2-small", config=config, device_map={"": 0})
+model = AutoModelForCausalLM.from_pretrained("lm_finetuning-train4000k/checkpoint-18700", config=config, device_map={"": 0}, torch_dtype=torch.bfloat16)
 
-tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL_NAME)
-tokenizer.pad_token = tokenizer.eos_token
-tokenizer.padding_side = "right"
+tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL_NAME, use_fast=False)
+tokenizer.do_lower_case = True
 
 def formatting_prompts_func(example):
     output_texts = []
@@ -57,17 +51,15 @@ def formatting_prompts_func(example):
         output_texts.append(text)
     return output_texts
 
-response_template = "\nコメント:"
-response_template_ids = tokenizer.encode(response_template, add_special_tokens=False)[2:]
-collator = DataCollatorForCompletionOnlyLM(response_template_ids, tokenizer=tokenizer)
+collator = DataCollatorForCompletionOnlyLM("コメント: ", tokenizer=tokenizer)
 
 
 if USE_DETAILED_TOPIC_PROMPT:
     batch_size = 16
     acc_step = 4
 else:
-    batch_size = 2
-    acc_step = 16
+    batch_size = 8
+    acc_step = 4
 
 training_params = TrainingArguments(
     output_dir="./" + run_name,
@@ -75,15 +67,15 @@ training_params = TrainingArguments(
     num_train_epochs=1,
     per_device_train_batch_size=batch_size,
     gradient_accumulation_steps=acc_step,
-    gradient_checkpointing=True,
+    # gradient_checkpointing=True,
     evaluation_strategy="steps",
-    save_steps=75,
-    logging_steps=15,
-    eval_steps=75,
+    save_steps=200,
+    logging_steps=100,
+    eval_steps=200,
     learning_rate=1e-4,
     weight_decay=0.001,
     fp16=False,
-    bf16=False,
+    bf16=True,
     max_grad_norm=0.3,
     max_steps=-1,
     warmup_ratio=0.03,
@@ -106,6 +98,7 @@ trainer = SFTTrainer(
     packing=False,
     formatting_func=formatting_prompts_func,
     data_collator=collator,
+    # callbacks=[EarlyStoppingCallback(early_stopping_patience=300)],
 )
 
 trainer.train(resume_from_checkpoint=True)

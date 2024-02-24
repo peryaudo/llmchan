@@ -25,13 +25,16 @@ def save_dat_files(dat_list, dst_dir):
         with open(os.path.join(dst_dir, dat_name), "w") as f:
             f.write(response.text)
 
-if True:
-    RESULT_DIR = "scraped"
-    save_dat_files(tqdm(get_dat_urls_in_url("https://asahi.5ch.net/newsplus/oyster/1495/")), dst_dir=RESULT_DIR)
-    save_dat_files(tqdm(get_dat_urls_in_url("https://asahi.5ch.net/newsplus/oyster/1496/")), dst_dir=RESULT_DIR)
-    save_dat_files(tqdm(get_dat_urls_in_url("https://asahi.5ch.net/newsplus/oyster/1497/")), dst_dir=RESULT_DIR)
-    save_dat_files(tqdm(get_dat_urls_in_url("https://asahi.5ch.net/newsplus/oyster/1498/")), dst_dir=RESULT_DIR)
-    save_dat_files(tqdm(get_dat_urls_in_url("https://asahi.5ch.net/newsplus/oyster/1498/")), dst_dir=RESULT_DIR)
-else:
-    RESULT_DIR = "scraped_val"
-    save_dat_files(tqdm(get_dat_urls_in_url("https://asahi.5ch.net/newsplus/oyster/1535/")), dst_dir=RESULT_DIR)
+RESULT_DIR = "scraped"
+VAL_RESULT_DIR = "scraped_val"
+# save_dat_files(tqdm(get_dat_urls_in_url("https://asahi.5ch.net/newsplus/oyster/1495/")), dst_dir=RESULT_DIR)
+# save_dat_files(tqdm(get_dat_urls_in_url("https://asahi.5ch.net/newsplus/oyster/1496/")), dst_dir=RESULT_DIR)
+# save_dat_files(tqdm(get_dat_urls_in_url("https://asahi.5ch.net/newsplus/oyster/1497/")), dst_dir=RESULT_DIR)
+# save_dat_files(tqdm(get_dat_urls_in_url("https://asahi.5ch.net/newsplus/oyster/1498/")), dst_dir=RESULT_DIR)
+save_dat_files(tqdm(get_dat_urls_in_url("https://asahi.5ch.net/newsplus/oyster/1491/")), dst_dir=RESULT_DIR)
+save_dat_files(tqdm(get_dat_urls_in_url("https://asahi.5ch.net/newsplus/oyster/1492/")), dst_dir=RESULT_DIR)
+save_dat_files(tqdm(get_dat_urls_in_url("https://asahi.5ch.net/newsplus/oyster/1493/")), dst_dir=RESULT_DIR)
+save_dat_files(tqdm(get_dat_urls_in_url("https://asahi.5ch.net/newsplus/oyster/1494/")), dst_dir=RESULT_DIR)
+save_dat_files(tqdm(get_dat_urls_in_url("https://asahi.5ch.net/newsplus/oyster/1499/")), dst_dir=RESULT_DIR)
+save_dat_files(tqdm(get_dat_urls_in_url("https://asahi.5ch.net/newsplus/oyster/1500/")), dst_dir=RESULT_DIR)
+# save_dat_files(tqdm(get_dat_urls_in_url("https://asahi.5ch.net/newsplus/oyster/1535/")), dst_dir=VAL_RESULT_DIR)
