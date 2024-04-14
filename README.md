@@ -1,6 +1,6 @@
 # llmchan: GPT2 fine-tuned to comment on Japanese news articles!
 
-![llmchan_screenshot.png](a screenshot of llmchan web UI)
+![a screenshot of llmchan web UI](llmchan_screenshot.png)
 
 5ch (formerly [2ch](https://en.wikipedia.org/wiki/2channel)) is a popular Japanese online form similar to reddit where people discuss various topics across multiple boards, which is the equivalent of subreddits. There are multiple boards dedicated to news where people post random comments on news articles. 
 
